@@ -1,0 +1,48 @@
+% the doc class is a modified ITE paper template
+\documentclass{two-col-epfl}
+
+% importing bibliography packages and files
+\usepackage[
+backend=biber,
+style=numeric,
+sorting=ynt
+]{biblatex}
+\addbibresource{Bibliography.bib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}%
+\usepackage{subfiles}
+\usepackage{bm}
+
+\begin{document}
+
+\headertitle{Semester Project Proposal Draft}
+\footertitle{EPFL - Biorobotics laboratory - Semester Project Proposal Draft}
+
+%% generating the title section
+\title{Learning Motor Policies with Time Continuous Neural Networks}
+
+\author{Titouan Renard $^1$}
+
+\address{\add{1}{MT-RO, 272257}}
+\maketitle
+
+% core text
+
+
+% ---------- Abstract ----------
+
+
+% ---------- Introduction ----------
+
+
+
+\textbf{Abstract}
+\textit{The following document serves as a repository for my notes and serves as a draft for my semester project report.}
+
+\section{Time-Continuous Neural Networks}
+\subfile{sections/CTN.tex}
+
+
+
+\printbibliography
+
+\end{document}
