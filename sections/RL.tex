@@ -1,0 +1,67 @@
+In order to optimize the continuous time models we choose to use reinforcement learning methods, the following section covers the Markov Decision Process formalism and gives an introduction to the main ideas behind Proximal Policy Optimization (PPO) \cite{schulman2017ppo}, the algorithm that we will use to train our model. \\% This formulation has several advantages, first it enables the training of the model to happen without any exterior intervention or training data, and secondly it will enable us to 
+
+\subsection{Markov Decision Processes}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/system.pdf}
+    \caption{A visual representation of the different components required to define an RL problem. An environment, which keeps state and defines the transition probability function, and a policy function (which may have a hidden state $h$) which takes observations $o_t$ of $s_t$ as inputs and returns actions $a_t$ as outputs.}
+\end{figure}
+
+Formulating our control problem as a reinforcement learning problem requires us to write out a control task as a partially observable Markov decision process (POMDP). We define a POMDP through:
+\begin{enumerate}
+    \item a (partially observable) state space $\mathcal{S}$ with states $s_t\in \mathbb{R}^n$,
+    \item an observation space $\mathcal{O}$ with states $o_t\in \mathbb{R}^m$, where observations $o_t$ give some information about the true states $s_t$,
+    \item an action space $\mathcal{A}$ with action $a_t \in \mathcal{A}\subseteq\mathbb{R}^d$, which gives the possible actions that the agent can take in a given state,
+    \item an unknown transition probability function $P(s_{t+1}|s_{t},a_{t})$, which gives the probability that the system transitions to state $s_{t+1}$ if it is in state $s_{t}$ and action $a_t$ is taken,
+    \item a reward function $R:(s_{t+1},s_t,a_t) \rightarrow \mathbb{R}$.
+\end{enumerate}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/MDP.pdf}
+    \caption{One can think of a Markov Decision Process as a tree of possible states $s_t, s_{t+1},...$ connected by branches associated with the transition probability function $P(s_{t+1}|s_t,a_t)$.}
+\end{figure}
+
+Given a POMDP, a discount factor $\gamma \in [0,1)$ and a policy function $\pi :\mathcal{S}\rightarrow\mathcal{A}$ we can compute the \textit{expected discounted reward} using the Bellman equation: 
+
+\begin{align*}
+    J{\pi_\theta} = \mathbb{E} \left[ \sum^\infty_{t=0} \gamma^t R(s_{t+1},s_t,\pi_\theta(o_t)) \right].
+\end{align*}
+
+The problem of reinforcement learning is formulated as the optimization of some parametrizable policy function $\pi$ (where the parameters are denoted $\theta$) over the POMDP process that ensures the the $J$ value is maximized in expectation across all states, i.e.:
+
+\begin{align*}
+    \pi^* = \text{argmax}_{\pi_\theta} \mathbb{E} \left[ \sum^\infty_{t=0} \gamma^t R(s_{t+1},s_t,\pi_\theta(o_t)) \right].
+\end{align*}
+
+\subsection{Policy Gradient Methods}
+
+We will consider a \textit{policy gradient} reinforcement learning method, such an approach is the most natural for a continuous control task, these method work by directly updating a policy function rather than by computing an estimator of the discounted reward for all possible actions (which is what is done in Q-learning methods). Policy gradient RL methods use update rules of the form:
+
+\begin{align*}
+    \theta_{k+1} = \theta_k + \alpha \nabla_{\theta_k} J(\pi_{\theta_k}) \vert_{\theta_k}.
+\end{align*}
+
+Here the tricky part of the method resides in deriving an expression for the gradient $\nabla_{\theta_k} J(\pi_{\theta_k}) \vert_{\theta_k}$ of the expected reward $J$ with respect to the parameters $\theta$ of the policy $\pi$. These methods are often presented in MDP instead of POMDP form but they generalize well to POMDPs. The derivation of policy gradient is performed as follows:
+\begin{align*}
+    \nabla_{\theta_k} J(\pi_{\theta_k}) \vert_{\theta_k} 
+    =  \nabla_{\theta_k} \int_\tau P(\tau|\theta)R(\tau)
+    % && \text{}
+    && \text{Expand expectation}\\
+    =  \int_\tau \nabla_{\theta_k}  P(\tau|\theta)R(\tau)
+    && \text{Use linearity}\\
+    =  \int_\tau  P(\tau|\theta) \nabla_{\theta_k} \log P(\tau|\theta)R(\tau)
+    && \text{Log trick} \\
+    =  \underset{\tau \sim \pi_\theta}{\mathbb{E}} \left[\nabla_{\theta_k} \log P(\tau|\theta)R(\tau)\right]
+    && \text{Take the expectations}\\
+    =  \underset{\tau \sim \pi_\theta}{\mathbb{E}} \left[\nabla_{\theta_k} \sum_{t=0}^T \log \pi_\theta(a_t|s_t)R(\tau)\right]
+    && \text{Expand over trajectories}
+\end{align*}
+
+In practice on can compute an estimate $\hat{g}$ of $\nabla_{\theta_k} J(\pi_{\theta_k})$ by sampling the MDP a sufficiently large number of time. Such an estimator is written out as follows: 
+
+\begin{align*}
+    \hat{g} = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) R(\tau).
+\end{align*}
+

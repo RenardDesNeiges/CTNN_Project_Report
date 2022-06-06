@@ -14,7 +14,7 @@ sorting=ynt
 
 \begin{document}
 
-\headertitle{Semester Project Proposal Draft}
+\headertitle{Semester Project Report}
 \footertitle{EPFL - Biorobotics laboratory - Semester Project Proposal Draft}
 
 %% generating the title section
@@ -36,11 +36,23 @@ sorting=ynt
 
 
 \textbf{Abstract}
-\textit{The following document serves as a repository for my notes and serves as a draft for my semester project report.}
+\textit{Time-Continuous Neural Networks provide an effective framework for the modeling of dynamical systems \cite{Chen2018NeuralOD} and are natural candidates for continuous-control tasks. They are closely related to the dynamics of non-spiking neurons, which gives further justification to investigate their use in control \cite{Lechner2020NeuralCP}. The following document describes the work and results obtained while investigating the use of such neural networks during a semester project jointly supervised by EPFL's BIOROB and LCN labs.}
+
+\section*{Introduction}
+
+We first consider time-continuous neural networks, and the main ideas of reinforcement learning, then we discuss implementation details, and finally we go go through the results obtained during the project.
 
 \section{Time-Continuous Neural Networks}
 \subfile{sections/CTN.tex}
 
+\section{Policy Gradient Methods and Reinforcement Learning}
+\subfile{sections/RL.tex}
+
+\section{Implementation of CTNN in a Reinforcement Learning framework}
+\subfile{sections/implementation.tex}
+
+\section{Results and Discussion}
+\subfile{sections/results.tex}
 
 
 \printbibliography
