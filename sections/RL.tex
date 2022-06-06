@@ -59,9 +59,49 @@ Here the tricky part of the method resides in deriving an expression for the gra
     && \text{Expand over trajectories}
 \end{align*}
 
-In practice on can compute an estimate $\hat{g}$ of $\nabla_{\theta_k} J(\pi_{\theta_k})$ by sampling the MDP a sufficiently large number of time. Such an estimator is written out as follows: 
+Where $\tau$ denotes the set of all trajectories $s_0,a_0,s_1,a_1,...$ in the state space under policy $\pi_\theta$. In practice one can compute an estimate $\hat{g}$ of $\nabla_{\theta_k} J(\pi_{\theta_k})$ by sampling the MDP a sufficiently large number of time. Such an estimator is written out as follows: 
 
 \begin{align*}
-    \hat{g} = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) R(\tau).
+    \hat{g} = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) G_t,
+\end{align*}
+where $G_t$ is the expected discounted reward over the remaining steps in the episode.
+
+\subsection{Advantage Actor Critic}
+
+Policy gradient methods derived as we described above tend to lead to unstable learning. 
+This is largely attributable to the fact that the gradient norms are subject to a high variance.
+The gradient in the variance of $\nabla_{\theta_k} J(\pi_{\theta_k})$ is proportional to the absolute value of the expected discounted reward over the trajectory $R(\tau)$, we can thus reduce the variance of our gradient estimator by subtracting a baseline to it's reward (this doesn't affect the gradients in expectation and thus the algorithm still converges to the same policy), the most common baseline used in that context is the \textit{on-policy value function $V_{\pi_\theta}(s)$}. 
+This means that in order to use an algorithm such as A2C we will have require two separate networks : a policy net (to implement a policy function) and a a critic net (to implement a value estimator) which both need to train simultaneously. To derive the formulation of advantage actor critic we first observe policy gradient implicitely makes use of $Q$ values.\\
+
+\begin{align*}
+    \hat{g} = \underset{\tau}{\mathbb{E}} \left[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) G_t \right] && \text{}\\
+    = \underset{s_0,a_0,...}{\mathbb{E}} \bigg[ \big[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) G_t \big] && \text{Observe that:}\\
+    + \underset{s_{t+1},r_{t+1},...,s_{T},r_{T}}{\mathbb{E}} [G_t] \bigg] && \mathbb{E} [G_t] = Q(s_t,a_t)\\
+    = \underset{s_0,a_0,...}{\mathbb{E}} \bigg[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) Q(s_t,a_t) \bigg] && 
 \end{align*}
 
+Then we subtract the baseline $V$ as follows:
+\begin{align*}
+    \hat{g} = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) (G_t-V(s))\\
+\end{align*}
+
+Using the Bellman Optimality equation $Q(s_t,a_t) = \mathbb{E}[r_{t+1}] + \gamma V(s_{t+1})$ we have that can write out the advantage function as:
+\begin{align*}
+    A(s_{t+1},s_t,a_t) = Q(s_t,a_t) - V(s_t,a_t) \\
+   \sim r_{t+1} + \gamma V(s_{t+1}) - V(s_t,a_t) 
+\end{align*}
+
+This approach leads us the the \textit{Advantage Actor Critic Method} (A2C) which computes it's gradients from an advantage function $A$ instead of a direct reward $R$:
+
+\begin{align*}
+    \hat{g} = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) A(s_{t+1},s_t,a_t)\\
+    = \frac{1}{|\mathcal{D}|} \sum_{\tau \in \mathcal{D}} \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) (r_{t+1} + \gamma V(s_{t+1}) - V(s_t))
+\end{align*}
+
+\subsection{Proximal Policy Optimization}
+
+\textbf{Describe PPO}
+
+\subsection{An architecture for training CTNNs using PPO}
+
+\textbf{Describe what I did}

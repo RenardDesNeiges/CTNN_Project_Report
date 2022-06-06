@@ -24,7 +24,7 @@ Where the flow $D$ is not only a function of the input $\bm{I}_t$ but also of th
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.45\textwidth]{figures/unroll.pdf}
-    \caption{Neural ODE unrolling v.s. RNN unrolling.}
+    \caption{An illustration of the difference between Neural ODE unrolling v.s. RNN unrolling.}
 \end{figure}
 
  The most straight forward approach to that problem is directly using a neural network to model the flow $D$, this is the approach chosen by \cite{Chen2018NeuralOD} (which is often referred to as "Neural-ODEs"). An alternative provided by an earlier contribution is the so called "Continuous-Time Recurrent Neural Network" model (CT-RNNs) first proposed by Funahashi and Nakamura in \cite{Funahashi1993ApproximationOD}, which pick $D$ as: 
