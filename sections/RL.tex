@@ -71,7 +71,7 @@ where $G_t$ is the expected discounted reward over the remaining steps in the ep
 Policy gradient methods derived as we described above tend to lead to unstable learning. 
 This is largely attributable to the fact that the gradient norms are subject to a high variance \cite{Konda00actor-criticalgorithms}.
 The gradient in the variance of $\nabla_{\theta_k} J(\pi_{\theta_k})$ is proportional to the absolute value of the expected discounted reward over the trajectory $R(\tau)$, we can thus reduce the variance of our gradient estimator by subtracting a baseline to it's reward (this doesn't affect the gradients in expectation and thus the algorithm still converges to the same policy), the most common baseline used in that context is the \textit{on-policy value function $V_{\pi_\theta}(s)$}. 
-This means that in order to use an aorks : a policy nelgorithm such as A2C we will have require two separate netwt (to implement a policy function) and a a critic net (to implement a value estimator) which both need to train simultaneously. To derive the formulation of advantage actor critic we first observe policy gradient implicitely makes use of $Q$ values.\\
+This means a policy algorithm such as A2C we will have require two separate networks, an actor network (to implement a policy function) and a a critic network (to implement a value estimator) which both need to train simultaneously. To derive the formulation of advantage actor critic we first observe policy gradient implicitely makes use of $Q$ values.\\
 
 \begin{align*}
     \hat{g} = \underset{\tau}{\mathbb{E}} \left[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta (a_t|s_t) G_t \right] && \text{}\\
@@ -101,7 +101,7 @@ This approach leads us the the \textit{Advantage Actor Critic Method} (A2C) whic
 In that framework we train two networks side by side, one of them is updated by the approximative gradient $\hat{g}$, and the other is updated by some loss function so that it converges to correct $V$ values.
 
 \subsection{Proximal Policy Optimization}
-
+\label{sec:ppo}
 \textbf{Describe PPO}
 
 \subsection{An architecture for training CTNNs using PPO}
