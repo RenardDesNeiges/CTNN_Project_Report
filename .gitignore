@@ -9,3 +9,4 @@ main.out
 main.run.xml
 main.synctex.gz
 .vscode/settings.json
+.DS_Store

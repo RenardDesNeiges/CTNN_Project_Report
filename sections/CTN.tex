@@ -99,20 +99,3 @@ The states of each neurons are then passed through a linear layer to compute the
 \end{align*}
 
 Note that this implies that each neuron's flow is influenced by it's input, every single other neuron on the same layer and also itself (it has a recurrent connection). This gives $k\cdot(k+n+d)$ connections in a single LTC cell, which is much denser than a typical multi-layer perceptron. To take a concrete example, in the implementation section when we discuss a $16$ neuron LTC cell for solving the cart-pole problem, it has $352$ connections for $16$ neurons, where a $16$ neuron perceptron with a single hidden-layer perceptron would only have $96$.
-% \subsubsection{Key questions to answer about TCNs}
-% \begin{itemize}
-%     \item Network properties
-%     \begin{itemize}
-%         \item Why use CT-RNNs instead of RNNs
-%         \item Why use LTCs instead of CT-RNNs
-%         \item What is the difference with Neural ODEs
-%     \end{itemize}
-%     \item Forward passes
-%     \begin{itemize}
-%         \item What solver to used for the ODE step
-%     \end{itemize}
-%     \item Training
-%     \begin{itemize}
-%         \item How does BPTT works?
-%     \end{itemize}
-% \end{itemize}

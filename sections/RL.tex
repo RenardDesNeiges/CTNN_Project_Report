@@ -102,8 +102,94 @@ In that framework we train two networks side by side, one of them is updated by 
 
 \subsection{Proximal Policy Optimization}
 \label{sec:ppo}
-\textbf{Describe PPO}
+
+
+\begin{algorithm}
+    \caption{PPO-Clip}
+    \label{ppo-clip}
+    Initialize neural networks $\pi_\theta$ and $V_\phi$ \\
+    Set counter $t \leftarrow 0$, observe $s_0$ from the env \\
+    \Repeat(){convergence}{
+        \ForAll(){workers $k$}{
+            \textbf{Take action} $a_t^{(k)} \leftarrow \pi_\theta(s_t^{(k)})$, \textbf{observe reward} $r_t^{(k)}$ and new state $s_{t+1}^{(k)}$\\
+            Compute $R_t^{(k)} =  r_t^{(k)} + \gamma V_\phi(s_{t+1})$ and the advantage $A^{(k)}_t = R_t^{(k)} - V_\phi(s_{t})$\\
+        }
+        \textbf{Update the policy :} optimize the surrogate loss $\hat{L}^\text{CLIP}(\theta') = \sum_{k} \gamma^t \text{clip}(r_{\theta'}(s_t,a_t),1-\epsilon,1+\epsilon) A_\theta(s_t,a_t)$ with gradient descent for $M$ epochs\\
+        \textbf{Update the advantage estimator :} $\phi$ by the gradient of $\sum_K (R_t^{(k)} - V_\phi(s_t^(k)))^2$
+    }
+\end{algorithm}
+
+
+Starting from A2C one can get further improvements in the stability of the convergence by constraining gradient descent to a small region in parameter space for each mini-batch. Algorithms making use of this idea (Trust Region Policy Optimization and Proxy Policy Optimization \cite{Schulman2017ProximalPO}) are giving state of the art results for continuous control tasks. A really nice walkthrough of this derivation can be found in Johanni Brea's lecture notes \cite{Brea} for the course Artificial Neural Networks at EPFL. \\
+
+A rough intuition of why these methods work can be gathered from writing out the expected policy improvements $J(\theta') - J(\Theta)$ of A2C. 
+{\tiny
+\begin{align*}
+    J(\theta') - J(\theta) = J(\theta') - \underset{s_0 \sim p(s_0)}{\mathbb{E}} [V_\theta(s_0)] 
+    && \parbox{8em}{By def. of $J(\theta)$} \\
+    = J(\theta') - \underset{s_t,a_t \sim \theta'}{\mathbb{E}} [V_\theta(s_0)] 
+    && \parbox{8em}{Take the expectation over all state action pairs (for policy $\pi(\theta')$)} \\
+    = J(\theta')  
+    - \underset{s_t,a_t \sim \theta'}{\mathbb{E}} \left[ \underbrace{\sum_{t=0}^\infty \gamma^t V_\theta(s_t) - \sum_{t=1}^\infty \gamma^t V_\theta(s_t)}_{\sum_{t=0}^\infty \gamma^t [V_\theta(s_t) - \gamma V_\theta(s_t) ]}\right]
+    && \parbox{8em}{Write out the expectation as a collapsing sum}\\
+    =  \underset{s_t,a_t \sim \theta'}{\mathbb{E}} \left[ \sum_{t=0}^\infty \gamma^t \underbrace{[r^{a}_{s_t \rightarrow s_{t+1}} - \gamma V_\theta(s_{t+1}) - V_\theta(s_{t}) ]}_{A_\theta(s_t,a_t)}  \right]
+    && \parbox{8em}{Plugging in the definiton of $J(\theta')$}\\
+    =  \underset{s_t,a_t \sim \theta'}{\mathbb{E}} \left[ \sum_{t=0}^\infty \gamma^t A_\theta(s_t,a_t)  \right] && \parbox{8em}{By definiton of the advantage function}\\
+    = \underset{s_t,a_t \sim \theta}{\mathbb{E}} \left[ \sum_{t=0}^\infty \gamma^t \frac{\pi_{\theta'}(s_t,a_t)}{\pi_{\theta}(s_t,a_t)} A_\theta(s_t,a_t)  \right]
+    && \parbox{8em}{Taking expectation over $\pi(\theta)$ instead of $\pi(\theta')$)}.\\
+\end{align*}}
+
+
+We observe that the expected improvement is maximized in expectation when the  term $\gamma^t \frac{\pi_{\theta'}(s_t,a_t)}{\pi_{\theta}(s_t,a_t)} A_\theta(s_t,a_t)$ is maximized. Assuming that the updated policy is close to the previous parametrization (i.e. $\frac{\pi_{\theta'}(s_t,a_t)}{\pi_{\theta}(s_t,a_t)} \approx 1$). We can directly optimize (maximize) an estimator of the improvement that we call $\hat{L}(\theta')$:
+
+\begin{align*}
+    \hat{L}(\theta') = \sum^\infty_{t=0} \gamma^t \overbrace{ \frac{\pi_{\theta'}(s_t,a_t)}{\pi_{\theta}(s_t,a_t)}}^{=r_{\theta'}(s_t,a_t) \approx 1} A_\theta(s_t,a_t).
+\end{align*}
+
+
+There are several approaches to keep the updated policy "close" to the previous installment ($r_{\theta'}(s_t,a_t) \approx 1$), one of the is theM compute an estimator of the KL divergence between both policies (which is what is done in TRPO) another is simply clip the loss at some maximum according to the following clipping function: 
+
+\begin{align*}
+    \text{clip}(x,\mu,\nu) =  
+    \begin{cases}
+        \nu & \text{if}~x<\nu \\
+        x & \text{if}~\nu<x<\mu \\
+        \mu & \text{if}~\mu<x 
+    \end{cases}.
+\end{align*}
+
+We called the clipped loss function the "\textit{surrogate loss}". This gives rise to the \textit{PPO-Clip} algorithm for which we give a pseudocode implementation in algorithm \ref{ppo-clip}.  \\
+
+\begin{algorithm}
+    \caption{Batched PPO-Clip}
+    \label{batched-ppo-clip}
+    Initialize neural networks $\pi_\theta$ and $V_\phi$ \\
+    Set counter $t \leftarrow 0$, observe $s_0$ from the env \\
+    \Repeat(){convergence}{
+        Initialize a trajectory batch $\tau \leftarrow (\tau^{(1)},\tau^{(2)},...,\tau^{(k)})$\\
+        \For{$t\in[0,\text{episode lenght}]$}{
+            \ForAll(){workers $k$}{
+                \textbf{Take action} $a_t^{(k)} \leftarrow \pi_\theta(s_t^{(k)})$, \textbf{observe reward} $r_t^{(k)}$ and new state $s_{t+1}^{(k)}$\\
+                Compute $R_t^{(k)} =  r_t^{(k)} + \gamma V_\phi(s_{t+1})$ and the advantage $A^{(k)}_t = R_t^{(k)} - V_\phi(s_{t})$\\
+                Append $s_t^{(k)},a_t^{(k)},s_{t+1}^{(k)},x_t^{(k)},R_t^{(k)},A^{(k)}_t$ to the trajectory $\tau^{(t)}$ associated with the worker
+            }
+        }
+        
+        \While(){trajectory batch $\tau$ is not empty}{
+            sample mini-batch from $\tau$ (and remove sampled elements) \\
+            \textbf{Update the policy :} optimize the surrogate loss over sampled mini-batch $\hat{L}^\text{CLIP}(\theta') = \sum_{k} \gamma^t \text{clip}(r_{\theta'}(s_t,a_t),1-\epsilon,1+\epsilon) A_\theta(s_t,a_t)$ with gradient descent for $M$ epochs\\
+            \textbf{Update the advantage estimator :} $\phi$ by the gradient of $\sum_K (R_t^{(k)} - V_\phi(s_t^(k)))^2$ over sampled mini-batch
+        }
+    }
+\end{algorithm}
+
+This reference implementation assumes that the policy is updated as the policy goes through environment steps. In practice this causes trouble when implementing the algorithm as it forces the batch size $k$ to be directly fixed by the number of parallel workers. An alternative approach consists in sampling the environment for several steps (we call this sequence of steps an "\textit{episode}") and then to reconstitute batches after the fact for training. This is what we will implement for our experiments. Algorithm \ref{batched-ppo-clip} gives pseudocode for such an implementation.
+
+
+
 
 \subsection{An architecture for training CTNNs using PPO}
 
-\textbf{Describe what I did}
+Dealing with the continuous time nature of the CTNN cells doesn't cause much trouble when implementing a reinforcement learning algorithm as it mostly just changes the back-propagation algorithm but not the loss or the variables that need to be stored in the process. On the other hand the fact that our CTNN cells are recurrent (have an inner state) changes the process as we somehow need to implement the \textit{unrolling} of the inner states. \\
+
+The way we do it is by saving the inner states $x_i^{(t)}$ of each neuron at each time step in every trace and then to consider them to be observations when training the policy, this allows for a minimal amount of changes to the PPO architecture at the cost of a relatively high memory use.
