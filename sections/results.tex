@@ -1,5 +1,5 @@
 \subsection{Experimental Setup}
-
+\label{sec:exp_setup}
 In order to investigate the efficiency of CTNN cells we setup a simple (and rather classical in the RL literature \cite{cartpoleSutton}) motor control experiment: the cart-pole problem. We use the \textit{Mujoco} gym implementation of cart-pole together with our \textit{DERL} implementation of \textit{PPO} training for CTNN policies to perform our experiments. We use the adjoint method for the computation of gradients and focus our experiments on \textit{LTC cells}. The code used for the experiments is publicly available at \url{https://github.com/RenardDesNeiges/CTNN_Policies_DERL}.\\
 
 \begin{figure}[h!]
@@ -30,7 +30,7 @@ Where $q=0.2$ is a penalty on control (where $u$ is a force measured in newtons)
 
 We find that the LTC cell trained with PPO can find efficient solutions to the cart-pole problem, but that it does so with a particularly low sample efficiency (compared to a reference \textit{Multi-Layer Perceptron} ({MLP}) model trained with a perceptron). On the other hand the amount of neurons required to achieve a good solution is extremely low compared to the amount of MLP neurons that would be required for solving the problem with a {MLP} model. This ability of the model to find low-neuron count solutions isn't of interest for computational reasons (recall the the number of parameters per neuron is much higher than in the case of an MLP) but may prove interesting as that low neuron count may make the system easier to interpret. 
 
-\subsection{The 5 neuron solution, trying to make sense of the activations}
+\subsection{The 5 neuron solution, an attempt at interpreting a learned policy}
 \label{sec:5-neurons}
 
 \begin{figure}[h!]
@@ -45,7 +45,7 @@ The lowest number of neuron that actually could solve the cart-pole problem is $
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.4\textwidth]{figures/5n_portrait.pdf}
-    \caption{Characterization of a 5-neuron LTC-cell policy. Phase portraits (top) and value portraits (down) in the pole angle phase space $\alpha,\dot{\alpha}$ (left) and cart position phase space (right).}
+    \caption{Characterization of a 5-neuron LTC-cell policy on cart-pole. Phase portraits (top) and value portraits (down) in the pole angle phase space $\alpha,\dot{\alpha}$ (left) and cart position phase space (right).}
     \label{fig:5n_portrait}
 \end{figure}
 
@@ -72,25 +72,52 @@ The resulting plot shows a clear influence of the inner states of the neurons in
 
 
 \subsection{Neuron Count Experiments}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.4\textwidth]{figures/32_n_portrait.pdf}
+    \caption{Characterization of a 32-neuron LTC-cell policy on cart-pole. Phase portraits (top) and value portraits (down) in the pole angle phase space $\alpha,\dot{\alpha}$ (left) and cart position phase space (right).}
+    \label{fig:32n_portrait}
+\end{figure}
+
 We run experiments with various neuron counts ($5,6,7,8,16,$ and $32$ neurons). The main questions we aim to answer with such a protocol are "\textit{Is there a minimum neuron count to solve such a problem?}" (and how different is it from the minimum neuron count with a perceptron) and "\textit{how does the neuron count affect the quality of solution?}". \\
 
-The first question, the minimum neuron count required to solve cart-pole seems to be somewhere around $5$ (the cell that we investigated in section \ref{sec:5-neurons} is the lowest count for which we could observe convergence).
+The first question, the minimum neuron count required to solve cart-pole seems to be somewhere around $5$ (the cell that we investigated in section \ref{sec:5-neurons} is the lowest count for which we could observe convergence). It is worth mentioning that as we discussed although the $5$-neuron policy "solves" the cart-pole problem, it displays a higher failure rate than other policies this is obviously seen when comparing the value portrait of the $5$-neuron policy from figure \ref{fig:5n_portrait} to the one of a $32$-neuron policy (figure \ref{fig:32n_portrait}). The value portraits are similar the value ranges are very different : the value of the $32$ neuron cell is close to being strictly positive whereas the $5$ neuron value is negative for large areas of the portraits. A negative value estimation implies that the cell "expects" it will fail if it ends up in a given area of the phase-space. \\
 
+We produce a more rigorous characterization of that effect by comparing the failure rate of various policies as follows: for each policy we compute $20$ independent simulation of $128$ steps each with different random seeds. For each simulation we count the failures (as defined in section \ref{sec:exp_setup}), for each failure we reset the environment and continue (so there can be more than $1$ failure in $1$ simulation). We then compare the total number of failures across policies, results are presented in figure \ref{fig:fail_rate}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.4\textwidth]{figures/fail_rate_over_nc.png}
+    \caption{Comparing the performance of policies with varying neuron counts. Each point represents one trained policy, the $x$-axis gives the number of neurons of that policy and the $y$-axis the number of failures during the experiments.}
+    \label{fig:fail_rate}
+\end{figure}
+
+The failure rate experiment that we ran shows a general trend towards a lower failure rate for the policies with the bigger amount of neurons (see figure \ref{fig:fail_rate}). Nonetheless it is interesting to observe that we have a clear outlier : the $5$-neuron policy that we presented in section \ref{sec:5-neurons} shows $0$ failures across the experiments. This seems to indicate that what limits the quality of the trained policies for low neuron counts is perhaps not the expressivity of the CTNN cells but rather the learning process. This observation, together with the convergence speed results displayed in figure \ref{fig:speed_count} may hint at an influence of overparametrization on the convergence speed \cite{pmlr-v139-simsek21a}.
 
 \subsection{Sample efficiency}
-\textbf{TODO : Influence of nc and mask?}
+
+One key aspect of the training of CTNN policies for control task with PPO is the limited sample efficiency compared to more straight forward models. The fastest convergence we manage to reach is around $30'000$ steps (with a relatively high neuron count, see figure \ref{fig:speed_count}) to convergence, this is much slower than what we could hope for with an equivalent MLP model (around 3 times slower for large CTNN cells, and even less for smaller ones). This is a problem as it makes more complex tasks, such as solving cart-pole with a masked environment, or higher degree-of-freedom control tasks such as legged locomotion, manipulation tasks etc, out of reach, because of computational limitations.
+
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.45\textwidth]{figures/convergence_rate.png}
-    \caption{}
+    \caption{Learning curves (reward over environment steps) of 4 example LTC policies trained on cart-pole with PPO. This plot showcases a clear inverse correlation between the per-step speed of learning and the number of neurons. The less neurons, the slower the learning.}
+    \label{fig:speed_count}
 \end{figure}
 
-\subsection{Resilience to noise?}
-\textbf{TODO : Influence of nc and mask?}
+
 
 \subsection{Discussion of the results}
-\textbf{TODO : Discuss the usability of the learned policies, what can we infer from this}
+% \textbf{TODO : Discuss the usability of the learned policies, what can we infer from this}
+The insights that we gain from this project, the difficulty in training (mostly the heavy computational cost), lead us to believe that the use of CTNN cells for simple control problems is probably neither necessary nor beneficial. Their use might prove more interesting as a replacement for LSTMs, for instance as a last layer before control for a vision task requiring some form of memory (this is suggested by Lechner et. al. in \cite{Lechner2020NeuralCP}), but we did not manage to get successful results on a task requiring memory. We did see improvements on some (for instance on the \textit{Mujoco reacher} benchmark), but we were not able to get them to converge in a sufficiently short time (we limited our training runs to $10h$). \\
 
 
-\subsection{Further work section}
-\textbf{TODO : Discuss what I didn't have time to do?}
+\subsection{Further work}
+% \textbf{TODO : Discuss what I didn't have time to do?}
+
+The main bottleneck in this project has been the implementation of a training environment for a CTNN cell, and the software engineering work associated with that task. 
+This was achieved starting from the \textit{DERL} framework but the limitations of said framework (the absence of well implemented parallelization in the version that I am using) limit the range of problems for which experiments can be run. CTNN cells are theoretically able to implement some notion of memory but the simple cart-pole problem we considered doesn't allow us to investigate this question. To characterize the ability of CTNN cells to solve that problem, we would need to be able to train them much faster and parallelization would greatly help in that regard. Attempts at implementing this were made during the project were abandoned because of time-limitations. \\
+
+Furthermore the similarity to biological neurons is certainly worth more investigation. Building LTC cells from known connectomes (copying the connection diagrams from known neural circuits) is perhaps a way of gaining insights on the inner-workings of biological neural circuits as well as a source of inspiration for the design of artificial neural networks. A first investigation into that question has been performed by Lechner et al. in \cite{Lechner2019wormInspiredNN} but not in a systematic way (only a single neural circuit has been experimented with by the authors). \\
+
+Finally given the excellent performance of time-continuous neural networks for the modeling of dynamical system, an investigation into the opportunities to use them in the context of model-based reinforcement learning may certainly be interesting.
