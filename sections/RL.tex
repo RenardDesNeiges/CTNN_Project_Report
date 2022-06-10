@@ -183,9 +183,7 @@ We called the clipped loss function the "\textit{surrogate loss}". This gives ri
     }
 \end{algorithm}
 
-This reference implementation assumes that the policy is updated as the policy goes through environment steps. In practice this causes trouble when implementing the algorithm as it forces the batch size $k$ to be directly fixed by the number of parallel workers. An alternative approach consists in sampling the environment for several steps (we call this sequence of steps an "\textit{episode}") and then to reconstitute batches after the fact for training. This is what we will implement for our experiments. Algorithm \ref{batched-ppo-clip} gives pseudocode for such an implementation.
-
-
+This reference implementation assumes that the policy is updated as the policy goes through environment steps. In practice this causes trouble when implementing the algorithm as it forces the batch size $k$ to be directly fixed by the number of parallel workers. An alternative approach consists in sampling the environment for several steps (we call this sequence of steps an "\textit{episode}") and then to reconstitute batches after the fact for training. This is the approach that we will use for our experiments. Algorithm \ref{batched-ppo-clip} gives pseudocode for such an implementation.
 
 
 \subsection{An architecture for training CTNNs using PPO}
