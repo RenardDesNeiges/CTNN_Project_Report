@@ -63,12 +63,27 @@ RNN-ODE &  $ \frac{\partial \bm{x}_t}{\partial t} = f(\bm{x}_t, \bm{I}_t, \theta
 
 Compared to multi-layer perceptrons and RNNs computing gradients on continuous time neural networks is way less obvious because of the integrator step. In the following section we discuss two approaches to the computation of such gradients together with their pros and cons. Two main approaches are possible \textit{backpropagation through time} (BPTT, which is recommanded by Hasani et al. \cite{Hasani2021LiquidTN}) and the \textit{adjoint sensitivity method} (which is recommended by Chen et al \cite{Chen2018NeuralOD}). \\
 
-\textit{Backpropagation through time} works by directly computed the gradient of a loss function through the ODE solver (it requires our ODE solver to build a computation graph and then we use \textit{autograd} to compute a gradient). \\
-\textbf{TODO: Finish write up on BPTT}
-\\
-The \textit{adjoint sensitivity method} required saving a so-called adjoint state $\bm{a}(t) = \frac{\partial L}{\partial \bm{z}(t)}$ throughout the unrolling of the neural network.
+\textit{Backpropagation through time} (BPTT) \cite{Hasani2021LiquidTN} works by directly computed the gradient of a loss function through the ODE solver (it requires our ODE solver to build a computation graph and then we use \textit{autograd} to compute a gradient). BPTT requires saving the inner state of neurons for every step of the ODE solver, this comes at a high memory cost. \\
 
-\textbf{TODO: Finish write up on the adjoint method}
+
+The \textit{adjoint sensitivity method} \cite{Chen2018NeuralOD}, required saving a so-called adjoint state $\bm{a}(t) = \frac{\partial L}{\partial x(t)}$ throughout the unrolling of the neural network. \\
+
+Given some Loss function:
+
+\begin{align*}
+    L(x(t))=L\left( x(t_0)+\int_{t_0}^{t} D(x(t),\theta) dt \right),
+\end{align*}
+
+we define our adjoint sensitivity state as $a(t) = \frac{d L}{d x(t)}$ where $x$ is the inner state of our differential equation. The dynamics of $a(t)$ are given by the equation: $\frac{d L(z(t))}{d x(t)}$. The idea here is to use the stored $a(t)$ to compute a gradient: 
+
+
+\begin{align*}
+    \frac{d L}{d \theta} = - \int_{t_1}^{t_0} a(t)^T \frac{d D(x(t), \bm{I}_t, \theta)}{d \theta} dt 
+\end{align*}
+
+Note that we compute the loss backwards through time (from $t_1$ to $t_0$) which is why the negative sign appears in front of the integral. Which we can use to perform gradient descent on our model. \\
+
+Although Hasani et al. suggest that BPTT reduces numerical error during training \cite{Hasani2021LiquidTN}, it's implementation is quite complex and we decide to stick with the adjoint method for our experiments, as we will discuss in the results section, this does not seem to stop us from learning policies.
 
 \subsection{Continuous Time Neural Network Cells}
 \label{sec:nn_cell}
